@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
-import type { User, SignUpCredentials, SignInCredentials, AuthResponse, AuthError } from '~/types/auth'
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
+import type { SignUpCredentials, SignInCredentials } from '~/types/auth'
 
 interface AuthState {
-  user: User | null
-  token: string | null
+  user: SupabaseUser | null
+  session: Session | null
   loading: boolean
   error: string | null
 }
@@ -11,14 +12,14 @@ interface AuthState {
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     user: null,
-    token: null,
+    session: null,
     loading: false,
     error: null,
   }),
 
   getters: {
-    isAuthenticated: (state): boolean => !!state.token && !!state.user,
-    currentUser: (state): User | null => state.user,
+    isAuthenticated: (state): boolean => !!state.session && !!state.user,
+    currentUser: (state): SupabaseUser | null => state.user,
   },
 
   actions: {
@@ -27,26 +28,23 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        const response = await $fetch<AuthResponse>('/api/auth/signup', {
+        const response = await $fetch<{ data: { user: SupabaseUser; session: Session } }>('/api/auth/register', {
           method: 'POST',
-          body: credentials,
+          body: {
+            email: credentials.email,
+            name: credentials.name,
+            password: credentials.password,
+          },
         })
 
-        this.user = response.user
-        this.token = response.token
+        this.user = response.data.user
+        this.session = response.data.session
 
-        // Store token in localStorage for persistence
-        if (import.meta.client) {
-          localStorage.setItem('auth_token', response.token)
-        }
-
-        // Redirect to dashboard
         await navigateTo('/dashboard')
 
         return response
       } catch (error: any) {
-        const authError = error.data as AuthError
-        this.error = authError?.message || 'An error occurred during sign up'
+        this.error = error?.data?.message || 'An error occurred during sign up'
         throw error
       } finally {
         this.loading = false
@@ -58,26 +56,22 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        const response = await $fetch<AuthResponse>('/api/auth/signin', {
+        const response = await $fetch<{ data: { user: SupabaseUser; session: Session } }>('/api/auth/login', {
           method: 'POST',
-          body: credentials,
+          body: {
+            email: credentials.email,
+            password: credentials.password,
+          },
         })
 
-        this.user = response.user
-        this.token = response.token
+        this.user = response.data.user
+        this.session = response.data.session
 
-        // Store token in localStorage for persistence
-        if (import.meta.client) {
-          localStorage.setItem('auth_token', response.token)
-        }
-
-        // Redirect to dashboard
         await navigateTo('/dashboard')
 
         return response
       } catch (error: any) {
-        const authError = error.data as AuthError
-        this.error = authError?.message || 'An error occurred during sign in'
+        this.error = error?.data?.message || 'An error occurred during sign in'
         throw error
       } finally {
         this.loading = false
@@ -86,52 +80,18 @@ export const useAuthStore = defineStore('auth', {
 
     async signOut() {
       try {
-        // Call sign out endpoint if you have one
-        // await $fetch('/api/auth/signout', { method: 'POST' })
-
-        // Clear state
-        this.user = null
-        this.token = null
-        this.error = null
-
-        // Clear localStorage
-        if (import.meta.client) {
-          localStorage.removeItem('auth_token')
-        }
-
-        // Redirect to sign in
-        await navigateTo('/account/sign-in')
-      } catch (error: any) {
-        this.error = error.message || 'An error occurred during sign out'
-        throw error
-      }
-    },
-
-    async loadUserFromToken() {
-      if (!import.meta.client) return
-
-      const token = localStorage.getItem('auth_token')
-      if (!token) return
-
-      this.loading = true
-
-      try {
-        // Fetch user data with token
-        const response = await $fetch<{ user: User }>('/api/auth/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        await $fetch('/api/auth/logout', {
+          method: 'POST',
         })
 
-        this.user = response.user
-        this.token = token
-      } catch (error) {
-        // Token is invalid, clear it
-        localStorage.removeItem('auth_token')
-        this.token = null
         this.user = null
-      } finally {
-        this.loading = false
+        this.session = null
+        this.error = null
+
+        await navigateTo('/account/sign-in')
+      } catch (error: any) {
+        this.error = error?.data?.message || 'An error occurred during sign out'
+        throw error
       }
     },
 
