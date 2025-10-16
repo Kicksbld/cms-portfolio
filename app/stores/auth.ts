@@ -95,6 +95,35 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async fetchUser() {
+      this.loading = true
+      this.error = null
+
+      try {
+        const response = await $fetch<{ data: { user: { id: string; email: string; display_name: string | null } } }>('/api/auth/user', {
+          method: 'GET',
+        })
+
+        // Update only the user data we have
+        if (this.user) {
+          this.user.email = response.data.user.email
+          if (response.data.user.display_name) {
+            this.user.user_metadata = {
+              ...this.user.user_metadata,
+              display_name: response.data.user.display_name,
+            }
+          }
+        }
+
+        return response
+      } catch (error: any) {
+        this.error = error?.data?.message || 'An error occurred while fetching user'
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
     clearError() {
       this.error = null
     },
