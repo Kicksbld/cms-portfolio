@@ -2,7 +2,7 @@
 export default defineNuxtRouteMiddleware(async () => {
   const authStore = useAuthStore();
   try {
-    await authStore.fetchUser(); // fetchUser met this.user à jour
+    await authStore.fetchUser();
   } catch (err) {
     console.warn('Utilisateur non connecté' + err);
   }
@@ -11,5 +11,5 @@ export default defineNuxtRouteMiddleware(async () => {
     return navigateTo('/account/sign-in');
   }
 
-  console.log('Utilisateur connecté :', authStore.user.email);
+  console.log('Utilisateur connecté');
 });
