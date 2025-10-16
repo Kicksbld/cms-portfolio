@@ -38,6 +38,7 @@ model Profile {
   experiences    Experience[]
   bentoBlocks    BentoBlock[]
   projectMembers ProjectMember[]
+  @@map("profile")
 }
 
 ///////////////////////////
