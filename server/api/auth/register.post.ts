@@ -3,7 +3,7 @@ import { readBody, createError } from 'h3';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { email, password } = body;
+  const { email, password, name } = body;
 
   if (!email || !password) {
     throw createError({
@@ -17,6 +17,9 @@ export default defineEventHandler(async (event) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: { display_name: name },
+    },
   });
 
   if (error) {
