@@ -9,6 +9,7 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     'shadcn-nuxt',
     '@prisma/nuxt',
+    '@pinia/nuxt'
   ],
   shadcn: {
     /**
