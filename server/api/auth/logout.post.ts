@@ -4,7 +4,7 @@ import { createError, deleteCookie } from 'h3';
 export default defineEventHandler(async (event) => {
   const supabase = createSupabaseServerClient(event);
 
-  const { error } = await supabase.auth.signOut();
+  const { error } = await (await supabase).auth.signOut();
   if (error) {
     throw createError({
       statusCode: 401,
