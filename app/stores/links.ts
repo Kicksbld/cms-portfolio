@@ -48,7 +48,7 @@ export const useLinksStore = defineStore('links', {
         const formData = new FormData();
         formData.append('title', newLink.title);
         formData.append('url', newLink.url);
-        formData.append('icon', newLink.icons);
+        formData.append('icon', newLink.icon);
 
         const response = await $fetch<{ data: Link }>('/api/links', {
           method: 'POST',
@@ -75,7 +75,7 @@ export const useLinksStore = defineStore('links', {
         const formData = new FormData();
         if (updateData.title) formData.append('title', updateData.title);
         if (updateData.url) formData.append('url', updateData.url);
-        if (updateData.icons) formData.append('icon', updateData.icons);
+        if (updateData.icon) formData.append('icon', updateData.icon);
 
         const response = await $fetch<{ data: Link }>(`/api/links/${id}`, {
           method: 'PATCH',
