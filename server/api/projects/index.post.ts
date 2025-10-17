@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "../../utils/supabase.server";
-import { createError } from "h3";
+import { createError, readBody } from "h3";
 
 export default defineEventHandler(async (event) => {
   const supabase = createSupabaseServerClient(event);
@@ -22,34 +22,30 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const projectData: {
-    title: string;
-    user_id: string;
-    thumbnail?: string;
-  } = {
+  const projectData = {
     title: body.title,
     user_id: userData.user.id,
+    thumbnail: body.thumbnail || null,
+    description: body.description || null,
   };
 
-  if (body.thumbnail) {
-    projectData.thumbnail = body.thumbnail;
-  }
-
-  const { data: project, error } = await supabase
+  const { data: project, error: projectError } = await supabase
     .from("project")
     .insert(projectData)
     .select()
     .single();
 
-  if (error) {
+  if (projectError) {
     throw createError({
       statusCode: 500,
       message: "Erreur lors de la création du projet",
-      data: error.message,
+      data: projectError.message,
     });
   }
 
   return {
-    data: project,
+    data: {
+      ...project,
+    },
   };
 });

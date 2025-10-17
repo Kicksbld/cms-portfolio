@@ -27,7 +27,6 @@ import { Button } from "@/components/ui/button";
 const authStore = useAuthStore();
 const route = useRoute();
 
-// Menu items with better icons and structure
 const items = [
   {
     title: "Overview",
@@ -100,7 +99,7 @@ onMounted(() => {
 
 <template>
   <Sidebar class="border-r border-sidebar-border bg-sidebar">
-    <SidebarHeader class="h-16 border-b border-sidebar-border px-6 ">
+    <SidebarHeader class="border-b border-sidebar-border px-6 py-4 ">
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm">
           <span class="text-primary-foreground font-semibold text-sm">C</span>
