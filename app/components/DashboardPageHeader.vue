@@ -10,7 +10,7 @@
     </div>
     <slot name="actions">
       <NuxtLink v-if="addLink" :to="addLink">
-        <Button class="gap-2">
+        <Button class="gap-2 cursor-pointer">
           <Plus class="h-4 w-4" />
           {{ addButtonText }}
         </Button>
@@ -20,8 +20,8 @@
 </template>
 
 <script setup lang="ts">
-import { Plus } from "lucide-vue-next";
-import { Button } from "@/components/ui/button";
+import { Plus } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
 
 defineProps<{
   title: string;

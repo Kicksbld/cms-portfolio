@@ -1,4 +1,4 @@
-/* import { createSupabaseServerClient } from '../../utils/supabase.server';
+import { createSupabaseServerClient } from '../../utils/supabase.server';
 import { createError } from 'h3';
 import authGuard from '../_authGard';
 export default defineEventHandler(async (event) => {
@@ -15,4 +15,3 @@ export default defineEventHandler(async (event) => {
 
   return { data };
 });
- */
