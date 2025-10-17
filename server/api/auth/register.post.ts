@@ -1,14 +1,14 @@
-import { createSupabaseServerClient } from '../../utils/supabase.server';
-import { readBody, createError } from 'h3';
+import { createSupabaseServerClient } from "../../utils/supabase.server";
+import { readBody, createError } from "h3";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { email, password, name } = body;
 
-  if (!email || !password) {
+  if (!email || !password || !name) {
     throw createError({
       statusCode: 400,
-      message: 'Email et mot de passe requis',
+      message: "Email, nom et mot de passe requis",
     });
   }
 
@@ -31,14 +31,14 @@ export default defineEventHandler(async (event) => {
 
   const { data: profileConnected, error: profileError } =
     await supabase.auth.signInWithPassword({
-      email: data.user?.email ?? '',
+      email: data.user?.email ?? "",
       password: password,
     });
 
   if (profileError) {
     throw createError({
       statusCode: 401,
-      message: `Error in logon : ${profileError.message}`,
+      message: `Error in login : ${profileError.message}`,
     });
   }
 

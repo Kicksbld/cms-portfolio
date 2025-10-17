@@ -8,7 +8,6 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@nuxtjs/tailwindcss',
     'shadcn-nuxt',
-    '@prisma/nuxt',
     '@pinia/nuxt'
   ],
   shadcn: {

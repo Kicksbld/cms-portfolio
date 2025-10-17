@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   if (profileError) {
     throw createError({
       statusCode: 401,
-      message: `Error in logon : ${profileError.message}`,
+      message: `Error in login : ${profileError.message}`,
     });
   }
 
