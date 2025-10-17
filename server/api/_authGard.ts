@@ -1,4 +1,3 @@
-// server/middleware/auth.ts
 import { createSupabaseServerClient } from '../utils/supabase.server';
 
 export default defineEventHandler(async (event) => {
@@ -11,7 +10,7 @@ export default defineEventHandler(async (event) => {
     '/api/auth/user',
   ];
 
-  if (publicRoutes.some((r) => path.startsWith(r))) {
+  if (publicRoutes.some((r) => path?.startsWith(r))) {
     return;
   }
 
