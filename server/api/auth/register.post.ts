@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
 
   const supabase = createSupabaseServerClient(event);
 
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await (await supabase).auth.signUp({
     email,
     password,
     options: {
@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const { data: profileConnected, error: profileError } =
-    await supabase.auth.signInWithPassword({
+    await (await supabase).auth.signInWithPassword({
       email: data.user?.email ?? "",
       password: password,
     });
