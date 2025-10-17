@@ -10,3 +10,9 @@ export interface CreateLink {
   url: string;
   icon: File;
 }
+
+// Type local pour l'édition (frontend uniquement)
+export interface EditableLink extends Link {
+  preview?: string | null;
+  newIcon?: File | null;
+}
