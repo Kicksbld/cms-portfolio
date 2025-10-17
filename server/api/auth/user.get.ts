@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const supabase = createSupabaseServerClient(event);
 
   // Récupère l'utilisateur connecté
-  const { data: user, error } = await supabase.auth.getUser();
+  const { data: user, error } = await (await supabase).auth.getUser();
 
   if (error) {
     throw createError({

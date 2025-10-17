@@ -1,6 +1,20 @@
+// server/middleware/auth.ts
 import { createSupabaseServerClient } from '../utils/supabase.server';
 
 export default defineEventHandler(async (event) => {
+  const path = event.path || event.node.req.url;
+  console.log(path);
+  const publicRoutes = [
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/logout',
+    '/api/auth/user',
+  ];
+
+  if (publicRoutes.some((r) => path.startsWith(r))) {
+    return;
+  }
+
   const supabase = createSupabaseServerClient(event);
   const {
     data: { user },
@@ -12,6 +26,4 @@ export default defineEventHandler(async (event) => {
   }
 
   event.context.auth = { user };
-  // await authMiddleware(event)
-  return;
 });
