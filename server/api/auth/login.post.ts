@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from '../../utils/supabase.server';
-import { readBody, createError } from 'h3';
+import { readBody, createError, setCookie } from 'h3';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
