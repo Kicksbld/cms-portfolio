@@ -13,15 +13,23 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  const userId = userData.user.id;
+
   const { data: projects, error } = await supabase
     .from("project")
-    .select(
-      `
+    .select(`
       id,
       title,
-      thumbnail
-    `
-    )
+      thumbnail,
+      description,
+      project_category (
+        category:categories (
+          id,
+          name
+        )
+      )
+    `)
+    .eq("user_id", userId)
     .order("id", { ascending: false });
 
   if (error) {
@@ -32,7 +40,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  return {
-    data: projects || [],
-  };
+  const formatted = (projects || []).map((p) => ({
+    id: p.id,
+    title: p.title,
+    thumbnail: p.thumbnail,
+    description: p.description,
+    categories: p.project_category?.map((pc) => pc.category) || [],
+  }));
+
+  return { data: formatted };
 });
