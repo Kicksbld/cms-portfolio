@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "../../../utils/supabase.server";
-import { createError, readBody } from "h3";
+import { createError, readMultipartFormData } from "h3";
 import authGuard from "../../_authGard";
 
 export default defineEventHandler(async (event) => {
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
   const { data: block, error: blockError } = await supabase
     .from("block")
-    .select("id, project_id")
+    .select("id, project_id, url")
     .eq("id", blockId)
     .single();
 
@@ -45,11 +45,24 @@ export default defineEventHandler(async (event) => {
   if (projectError || !project) {
     throw createError({
       statusCode: 403,
-      message: "Accés non autoris�",
+      message: "Accès non autorisé",
     });
   }
 
-  const body = await readBody(event);
+  const form = await readMultipartFormData(event);
+
+  if (!form) {
+    throw createError({
+      statusCode: 400,
+      message: "Aucun formData reçu",
+    });
+  }
+
+  const title = form.find((f) => f.name === "title")?.data?.toString();
+  const description = form
+    .find((f) => f.name === "description")
+    ?.data?.toString();
+  const image = form.find((f) => f.name === "image");
 
   const updateData: {
     title?: string;
@@ -57,16 +70,48 @@ export default defineEventHandler(async (event) => {
     url?: string | null;
   } = {};
 
-  if (body.title !== undefined) {
-    updateData.title = body.title;
+  if (title !== undefined) {
+    updateData.title = title;
   }
 
-  if (body.description !== undefined) {
-    updateData.description = body.description;
+  if (description !== undefined) {
+    updateData.description = description || null;
   }
 
-  if (body.url !== undefined) {
-    updateData.url = body.url;
+  // Handle image upload if a new image is provided
+  if (image && image.data) {
+    const fileName = `${user.id}-${Date.now()}-${image.filename}`;
+    const { error: uploadError } = await supabase.storage
+      .from("blocks")
+      .upload(fileName, image.data, {
+        contentType: image.type,
+      });
+
+    if (uploadError) {
+      throw createError({
+        statusCode: 500,
+        message: `Erreur upload image : ${uploadError.message}`,
+      });
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("blocks")
+      .getPublicUrl(fileName);
+
+    updateData.url = publicUrlData.publicUrl;
+
+    // Optional: Delete old image from storage if it exists
+    if (block.url) {
+      try {
+        const oldFileName = block.url.split("/").pop();
+        if (oldFileName) {
+          await supabase.storage.from("blocks").remove([oldFileName]);
+        }
+      } catch (deleteError) {
+        // Silently fail - old image deletion is not critical
+        console.error("Error deleting old image:", deleteError);
+      }
+    }
   }
 
   if (Object.keys(updateData).length === 0) {

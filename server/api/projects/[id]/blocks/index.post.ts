@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "../../../../utils/supabase.server";
-import { createError, readBody } from "h3";
+import { createError, readMultipartFormData } from "h3";
 import authGuard from "../../../_authGard";
 
 export default defineEventHandler(async (event) => {
@@ -36,20 +36,57 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const body = await readBody(event);
+  const form = await readMultipartFormData(event);
 
-  if (!body.title) {
+  if (!form) {
+    throw createError({
+      statusCode: 400,
+      message: "Aucun formData reçu",
+    });
+  }
+
+  const title = form.find((f) => f.name === "title")?.data?.toString();
+  const description = form
+    .find((f) => f.name === "description")
+    ?.data?.toString();
+  const image = form.find((f) => f.name === "image");
+
+  if (!title) {
     throw createError({
       statusCode: 400,
       message: "Le titre du bloc est requis",
     });
   }
 
+  let imageUrl = null;
+
+  if (image && image.data) {
+    const fileName = `${user.id}-${Date.now()}-${image.filename}`;
+    const { error: uploadError } = await supabase.storage
+      .from("blocks")
+      .upload(fileName, image.data, {
+        contentType: image.type,
+      });
+
+    if (uploadError) {
+      throw createError({
+        statusCode: 500,
+        message: `Erreur upload image : ${uploadError.message}`,
+      });
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("blocks")
+      .getPublicUrl(fileName);
+
+    imageUrl = publicUrlData.publicUrl;
+  }
+
   const blockData = {
     project_id: projectId,
-    title: body.title,
-    description: body.description || null,
-    url: body.url || null,
+    title,
+    description: description || null,
+    url: imageUrl,
   };
 
   const { data: block, error } = await supabase
