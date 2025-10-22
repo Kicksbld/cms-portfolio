@@ -17,7 +17,7 @@ export interface ProjectsResponse {
 
 export interface CreateProjectData {
   title: string
-  thumbnail?: string | null
+  thumbnail?: File | null
   description?: string | null
 }
 

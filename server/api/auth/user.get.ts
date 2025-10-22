@@ -1,24 +1,13 @@
-import { createSupabaseServerClient } from "../../utils/supabase.server";
 import { createError } from "h3";
+import authGuard from "../_authGard";
 
 export default defineEventHandler(async (event) => {
-  // Récupère le client Supabase côté serveur avec les cookies
-  const supabase = createSupabaseServerClient(event);
+  const user = await authGuard(event);
 
-  // Récupère l'utilisateur connecté
-  const { data: user, error } = await supabase.auth.getUser();
-
-  if (error) {
+  if (!user) {
     throw createError({
       statusCode: 401,
-      message: error.message || "Utilisateur non connecté",
-    });
-  }
-
-  if (!user?.user) {
-    throw createError({
-      statusCode: 401,
-      message: "Aucun utilisateur trouvé",
+      message: "Utilisateur non connecté",
     });
   }
 
@@ -26,9 +15,9 @@ export default defineEventHandler(async (event) => {
     data: {
       message: "ok",
       user: {
-        id: user.user.id,
-        email: user.user.email,
-        display_name: user.user.user_metadata?.display_name || null,
+        id: user.id,
+        email: user.email,
+        display_name: user.user_metadata?.display_name || null,
       },
     },
   };

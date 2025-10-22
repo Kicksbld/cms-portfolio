@@ -48,9 +48,21 @@ export const useProjectsStore = defineStore('projects', {
       this.error = null
 
       try {
+        // Create FormData to handle file upload
+        const formData = new FormData()
+        formData.append('title', projectData.title)
+
+        if (projectData.description) {
+          formData.append('description', projectData.description)
+        }
+
+        if (projectData.thumbnail) {
+          formData.append('thumbnail', projectData.thumbnail)
+        }
+
         const response = await $fetch<{ data: Project }>('/api/projects', {
           method: 'POST',
-          body: projectData,
+          body: formData,
         })
 
         // Add the new project to the beginning of the list

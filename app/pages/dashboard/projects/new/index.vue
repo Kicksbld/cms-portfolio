@@ -59,26 +59,26 @@
               for="thumbnail"
               class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Thumbnail URL
+              Thumbnail Image
             </label>
             <Input
               id="thumbnail"
-              v-model="formData.thumbnail!"
-              type="url"
-              placeholder="https://example.com/image.jpg"
+              type="file"
+              accept="image/*"
               :disabled="projectsStore.loading"
+              @change="handleFileChange"
             />
             <p class="text-sm text-muted-foreground">
-              Add a URL to an image that represents your project
+              Upload an image that represents your project
             </p>
           </div>
 
           <div
-            v-if="formData.thumbnail"
+            v-if="previewUrl"
             class="relative rounded-lg border overflow-hidden bg-muted"
           >
             <img
-              :src="formData.thumbnail"
+              :src="previewUrl"
               alt="Thumbnail preview"
               class="w-full h-48 object-cover"
             />
@@ -133,8 +133,28 @@ const projectsStore = useProjectsStore();
 const formData = reactive<CreateProjectData>({
   title: "",
   description: "",
-  thumbnail: "",
+  thumbnail: null,
 });
+
+const previewUrl = ref<string | null>(null);
+
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (file) {
+    formData.thumbnail = file;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewUrl.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    formData.thumbnail = null;
+    previewUrl.value = null;
+  }
+};
 
 const handleSubmit = async () => {
   try {
