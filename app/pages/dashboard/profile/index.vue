@@ -34,10 +34,10 @@
           <div class="flex items-center gap-6">
             <Avatar class="h-20 w-20">
               <AvatarImage
-                :src="`https://api.dicebear.com/7.x/initials/svg?seed=${userInfo?.display_name || userInfo?.email}`"
+                :src="`https://api.dicebear.com/7.x/initials/svg?seed=${authStore.userProfile?.display_name || authStore.userProfile?.email}`"
               />
               <AvatarFallback>
-                {{ getInitials(userInfo?.display_name || userInfo?.email) }}
+                {{ getInitials(authStore.userProfile?.display_name || authStore.userProfile?.email) }}
               </AvatarFallback>
             </Avatar>
 
@@ -45,12 +45,12 @@
               <div>
                 <p class="text-sm font-medium text-muted-foreground">Display Name</p>
                 <p class="text-lg font-semibold">
-                  {{ userInfo?.display_name || 'Not set' }}
+                  {{ authStore.userProfile?.display_name || 'Not set' }}
                 </p>
               </div>
               <div>
                 <p class="text-sm font-medium text-muted-foreground">Email</p>
-                <p class="text-base">{{ userInfo?.email }}</p>
+                <p class="text-base">{{ authStore.userProfile?.email }}</p>
               </div>
             </div>
           </div>
@@ -146,12 +146,6 @@ const authStore = useAuthStore();
 const linksStore = useLinksStore();
 
 const loading = ref(true);
-const userInfo = ref<{
-  id: string;
-  email: string;
-  display_name: string | null;
-} | null>(null);
-
 const links = computed(() => linksStore.links);
 
 const getInitials = (name: string | null | undefined) => {
@@ -166,9 +160,8 @@ const getInitials = (name: string | null | undefined) => {
 
 onMounted(async () => {
   try {
-    // Fetch user info
-    const userResponse = await authStore.fetchUser();
-    userInfo.value = userResponse.data.user;
+    // Fetch user info (uses cache if available)
+    await authStore.fetchUser();
 
     // Fetch links
     await linksStore.fetchLinks();

@@ -2,9 +2,17 @@ import { defineStore } from 'pinia'
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
 import type { SignUpCredentials, SignInCredentials } from '~/types/auth'
 
+interface UserProfile {
+  id: string
+  email: string
+  display_name: string | null
+}
+
 interface AuthState {
   user: SupabaseUser | null
   session: Session | null
+  userProfile: UserProfile | null
+  userProfileLoaded: boolean
   loading: boolean
   error: string | null
 }
@@ -13,6 +21,8 @@ export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     user: null,
     session: null,
+    userProfile: null,
+    userProfileLoaded: false,
     loading: false,
     error: null,
   }),
@@ -86,6 +96,8 @@ export const useAuthStore = defineStore('auth', {
 
         this.user = null
         this.session = null
+        this.userProfile = null
+        this.userProfileLoaded = false
         this.error = null
 
         await navigateTo('/account/sign-in')
@@ -95,7 +107,12 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async fetchUser() {
+    async fetchUser(forceRefresh = false) {
+      // Skip fetch if data is already loaded and not forcing refresh
+      if (this.userProfileLoaded && !forceRefresh) {
+        return { data: { user: this.userProfile } }
+      }
+
       this.loading = true
       this.error = null
 
@@ -103,6 +120,10 @@ export const useAuthStore = defineStore('auth', {
         const response = await $fetch<{ data: { user: { id: string; email: string; display_name: string | null } } }>('/api/auth/user', {
           method: 'GET',
         })
+
+        // Cache the user profile data
+        this.userProfile = response.data.user
+        this.userProfileLoaded = true
 
         // Update only the user data we have
         if (this.user) {
@@ -135,6 +156,9 @@ export const useAuthStore = defineStore('auth', {
             display_name: displayName,
           },
         })
+
+        // Update cached user profile
+        this.userProfile = response.data.user
 
         // Update user in store
         if (this.user) {

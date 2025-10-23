@@ -25,10 +25,10 @@
             <div class="flex items-center gap-6 mb-6">
               <Avatar class="h-20 w-20">
                 <AvatarImage
-                  :src="`https://api.dicebear.com/7.x/initials/svg?seed=${formData.display_name || userInfo?.email}`"
+                  :src="`https://api.dicebear.com/7.x/initials/svg?seed=${formData.display_name || authStore.userProfile?.email}`"
                 />
                 <AvatarFallback>
-                  {{ getInitials(formData.display_name || userInfo?.email) }}
+                  {{ getInitials(formData.display_name || authStore.userProfile?.email) }}
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -63,7 +63,7 @@
                 Email Address
               </label>
               <Input
-                :value="userInfo?.email"
+                :value="authStore.userProfile?.email"
                 disabled
                 class="bg-muted"
               />
@@ -143,12 +143,6 @@ const initialLoading = ref(true);
 const isLoading = computed(() => authStore.loading);
 const showSuccess = ref(false);
 
-const userInfo = ref<{
-  id: string;
-  email: string;
-  display_name: string | null;
-} | null>(null);
-
 const formData = reactive({
   display_name: '',
 });
@@ -193,9 +187,9 @@ onMounted(async () => {
   authStore.clearError();
 
   try {
-    const response = await authStore.fetchUser();
-    userInfo.value = response.data.user;
-    formData.display_name = userInfo.value.display_name || '';
+    // This will use cached data if available
+    await authStore.fetchUser();
+    formData.display_name = authStore.userProfile?.display_name || '';
   } catch (error) {
     console.error('Failed to fetch user data:', error);
   } finally {
