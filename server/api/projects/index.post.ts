@@ -1,6 +1,8 @@
 import { createSupabaseServerClient } from "../../utils/supabase.server";
 import { createError, readMultipartFormData } from "h3";
 import authGuard from "../_authGard";
+import { validateProjectThumbnail, generateSafeFilename } from "../../utils/fileUpload";
+import { validateProjectTitle, validateDescription } from "../../utils/validation";
 
 export default defineEventHandler(async (event) => {
   const user = await authGuard(event);
@@ -30,11 +32,33 @@ export default defineEventHandler(async (event) => {
   const thumbnail = form.find((f) => f.name === "thumbnail");
   const categoriesJson = form.find((f) => f.name === "categories")?.data?.toString();
 
+  // Validate title
   if (!title) {
     throw createError({
       statusCode: 400,
       message: "Le titre du projet est requis",
     });
+  }
+
+  const titleValidation = validateProjectTitle(title);
+  if (!titleValidation.isValid) {
+    throw createError({
+      statusCode: 400,
+      message: titleValidation.error || "Titre invalide",
+    });
+  }
+
+  // Validate description if provided
+  let sanitizedDescription = null;
+  if (description) {
+    const descValidation = validateDescription(description);
+    if (!descValidation.isValid) {
+      throw createError({
+        statusCode: 400,
+        message: descValidation.error || "Description invalide",
+      });
+    }
+    sanitizedDescription = descValidation.sanitized;
   }
 
   // Parse category IDs from JSON
@@ -54,7 +78,12 @@ export default defineEventHandler(async (event) => {
   let thumbnailUrl = null;
 
   if (thumbnail && thumbnail.data) {
-    const fileName = `${user.id}-${Date.now()}-${thumbnail.filename}`;
+    // Validate file security (type, size, signature)
+    validateProjectThumbnail(thumbnail);
+
+    // Generate secure filename
+    const fileName = generateSafeFilename(user.id, thumbnail.filename);
+
     const { error: uploadError } = await supabase.storage
       .from("projects")
       .upload(fileName, thumbnail.data, {
@@ -76,10 +105,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const projectData = {
-    title,
+    title: titleValidation.sanitized,
     user_id: user.id,
     thumbnail: thumbnailUrl,
-    description: description || null,
+    description: sanitizedDescription,
   };
 
   const { data: project, error: projectError } = await supabase

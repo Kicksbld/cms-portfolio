@@ -1,6 +1,8 @@
 import { createSupabaseServerClient } from "../../../utils/supabase.server";
 import { createError, readMultipartFormData } from "h3";
 import authGuard from "../../_authGard";
+import { validateProjectThumbnail, generateSafeFilename } from "../../../utils/fileUpload";
+import { validateProjectTitle, validateDescription } from "../../../utils/validation";
 
 export default defineEventHandler(async (event) => {
   const user = await authGuard(event);
@@ -60,17 +62,42 @@ export default defineEventHandler(async (event) => {
     thumbnail?: string;
   } = {};
 
+  // Validate and sanitize title if provided
   if (title !== undefined) {
-    updateData.title = title;
+    const titleValidation = validateProjectTitle(title);
+    if (!titleValidation.isValid) {
+      throw createError({
+        statusCode: 400,
+        message: titleValidation.error || "Titre invalide",
+      });
+    }
+    updateData.title = titleValidation.sanitized;
   }
 
+  // Validate and sanitize description if provided
   if (description !== undefined) {
-    updateData.description = description || null;
+    if (description) {
+      const descValidation = validateDescription(description);
+      if (!descValidation.isValid) {
+        throw createError({
+          statusCode: 400,
+          message: descValidation.error || "Description invalide",
+        });
+      }
+      updateData.description = descValidation.sanitized;
+    } else {
+      updateData.description = null;
+    }
   }
 
   // Handle thumbnail upload if a new image is provided
   if (thumbnail && thumbnail.data) {
-    const fileName = `${user.id}-${Date.now()}-${thumbnail.filename}`;
+    // SECURITY: Validate file before upload (type, size, signature)
+    validateProjectThumbnail(thumbnail);
+
+    // Generate secure filename
+    const fileName = generateSafeFilename(user.id, thumbnail.filename);
+
     const { error: uploadError } = await supabase.storage
       .from("projects")
       .upload(fileName, thumbnail.data, {

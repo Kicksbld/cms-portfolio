@@ -20,18 +20,20 @@ export function createSupabaseServerClient(event: H3Event) {
     supabase.auth.setSession({ access_token, refresh_token } as any);
   }
 
-  // Patch pour écriture automatique lors d’un refresh
+  // Patch pour écriture automatique lors d'un refresh
   supabase.auth.onAuthStateChange((eventName, session) => {
     if (!session) return;
 
-    setCookie(event, 'sb-access-token', session.access_token, {
+    const cookieOptions = {
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'strict' as const, // CSRF protection
       path: '/',
-    });
-    setCookie(event, 'sb-refresh-token', session.refresh_token, {
-      httpOnly: true,
-      path: '/',
-    });
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    };
+
+    setCookie(event, 'sb-access-token', session.access_token, cookieOptions);
+    setCookie(event, 'sb-refresh-token', session.refresh_token, cookieOptions);
   });
 
   return supabase;

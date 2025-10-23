@@ -16,13 +16,27 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // CRITICAL SECURITY: Verify link ownership before deletion
+  const { data: link, error: linkError } = await supabase
+    .from('link')
+    .select('id, user_id')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (linkError || !link) {
+    throw createError({
+      statusCode: 404,
+      message: 'Lien non trouvé ou accès non autorisé',
+    });
+  }
+
   const { error } = await supabase.from('link').delete().eq('id', id);
 
   if (error) {
     throw createError({
       statusCode: 500,
       message: 'Erreur lors de la suppression du link',
-      data: error.message,
     });
   }
 

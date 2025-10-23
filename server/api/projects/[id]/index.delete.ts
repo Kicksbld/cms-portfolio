@@ -23,6 +23,21 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // CRITICAL SECURITY: Verify project ownership before deletion
+  const { data: project, error: projectError } = await supabase
+    .from("project")
+    .select("id, user_id")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (projectError || !project) {
+    throw createError({
+      statusCode: 404,
+      message: "Projet non trouvé ou accès non autorisé",
+    });
+  }
+
   const { error } = await supabase
     .from("project")
     .delete()
@@ -32,7 +47,6 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 500,
       message: "Erreur lors de la suppression du projet",
-      data: error.message,
     });
   }
 
