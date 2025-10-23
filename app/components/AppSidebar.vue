@@ -55,21 +55,6 @@ const items = [
   },
 ];
 
-const userInfo = ref<{
-  id: string;
-  email: string;
-  display_name: string | null;
-} | null>(null);
-
-const loadUserInfo = async () => {
-  try {
-    const response = await authStore.fetchUser();
-    userInfo.value = response.data.user;
-  } catch (error) {
-    console.error("Failed to load user info:", error);
-  }
-};
-
 const handleLogout = async () => {
   try {
     await authStore.signOut();
@@ -93,7 +78,8 @@ const getInitials = (name: string | null) => {
 };
 
 onMounted(() => {
-  loadUserInfo();
+  // Fetch user profile only if not already loaded (will be cached)
+  authStore.fetchUser();
 });
 </script>
 
@@ -157,20 +143,20 @@ onMounted(() => {
 
     <SidebarFooter class="p-4 border-t border-sidebar-border">
       <SidebarMenu>
-        <SidebarMenuItem v-if="!authStore.loading && userInfo">
+        <SidebarMenuItem v-if="!authStore.loading && authStore.userProfile">
           <div class="flex items-center gap-3 px-3 py-3 rounded-lg bg-sidebar-accent/30">
             <Avatar class="w-9 h-9 border-2 border-sidebar-border">
-              <AvatarImage :src="`https://api.dicebear.com/7.x/initials/svg?seed=${userInfo.display_name}`" />
+              <AvatarImage :src="`https://api.dicebear.com/7.x/initials/svg?seed=${authStore.userProfile.display_name}`" />
               <AvatarFallback class="bg-primary text-primary-foreground text-xs font-medium">
-                {{ getInitials(userInfo.display_name) }}
+                {{ getInitials(authStore.userProfile.display_name) }}
               </AvatarFallback>
             </Avatar>
             <div class="flex-1 overflow-hidden">
               <p class="text-sm font-medium text-sidebar-foreground truncate">
-                {{ userInfo.display_name || 'User' }}
+                {{ authStore.userProfile.display_name || 'User' }}
               </p>
               <p class="text-xs text-sidebar-foreground/60 truncate">
-                {{ userInfo.email }}
+                {{ authStore.userProfile.email }}
               </p>
             </div>
           </div>
@@ -190,9 +176,9 @@ onMounted(() => {
         <SidebarSeparator class="my-3" />
 
         <SidebarMenuItem>
-          <Button 
+          <Button
             @click="handleLogout"
-            variant="ghost" 
+            variant="ghost"
             class="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent"
           >
             <LogOut class="w-4 h-4" />
