@@ -176,6 +176,17 @@ onMounted(() => {
         <SidebarSeparator class="my-3" />
 
         <SidebarMenuItem>
+          <div class="px-3 py-2">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-medium text-sidebar-foreground/60">Theme</span>
+            </div>
+            <ThemeSwitcher />
+          </div>
+        </SidebarMenuItem>
+
+        <SidebarSeparator class="my-3" />
+
+        <SidebarMenuItem>
           <Button
             @click="handleLogout"
             variant="ghost"
