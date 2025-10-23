@@ -2,18 +2,26 @@
   <NuxtLayout name="dashboard">
     <template #header>
       <DashboardPageHeader
-        title="Create New Project"
-        description="Add a new project to your portfolio"
+        title="Edit Project"
+        description="Update your project details, categories, and blocks"
       />
     </template>
 
-    <div class="space-y-6">
+    <div v-if="initialLoading" class="flex items-center justify-center py-12">
+      <Spinner class="h-8 w-8" />
+    </div>
+
+    <div v-else-if="!project" class="text-center py-12">
+      <p class="text-muted-foreground">Project not found</p>
+    </div>
+
+    <div v-else class="space-y-6">
       <!-- Project Details Card -->
       <Card>
         <CardHeader>
           <CardTitle>Project Details</CardTitle>
           <CardDescription>
-            Fill in the details below to create your new project
+            Update the details for your project
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -32,9 +40,6 @@
                 required
                 :disabled="isLoading"
               />
-              <p class="text-sm text-muted-foreground">
-                Give your project a clear and descriptive title
-              </p>
             </div>
 
             <div class="space-y-2">
@@ -51,9 +56,6 @@
                 rows="5"
                 :disabled="isLoading"
               />
-              <p class="text-sm text-muted-foreground">
-                Provide a brief overview of your project and its key features
-              </p>
             </div>
 
             <div class="space-y-2">
@@ -71,16 +73,16 @@
                 @change="handleFileChange"
               />
               <p class="text-sm text-muted-foreground">
-                Upload an image that represents your project
+                Upload a new image to replace the current thumbnail
               </p>
             </div>
 
             <div
-              v-if="previewUrl"
+              v-if="previewUrl || project.thumbnail"
               class="relative rounded-lg border overflow-hidden bg-muted"
             >
               <img
-                :src="previewUrl"
+                :src="previewUrl || project.thumbnail"
                 alt="Thumbnail preview"
                 class="w-full h-48 object-cover"
               />
@@ -162,7 +164,7 @@
             <div>
               <CardTitle>Project Blocks</CardTitle>
               <CardDescription>
-                Add sections or components that make up your project
+                Manage sections or components that make up your project
               </CardDescription>
             </div>
             <Button
@@ -202,7 +204,7 @@
           <div v-else class="space-y-4">
             <div
               v-for="(block, index) in blocks"
-              :key="block.tempId"
+              :key="block.id || block.tempId"
               class="border rounded-lg p-4 space-y-4 bg-card relative"
             >
               <div class="flex items-center justify-between mb-2">
@@ -210,7 +212,9 @@
                   <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                     <span class="text-sm font-medium text-primary">{{ index + 1 }}</span>
                   </div>
-                  <h4 class="text-sm font-medium">Block {{ index + 1 }}</h4>
+                  <h4 class="text-sm font-medium">
+                    {{ block.id ? `Block ${index + 1}` : `New Block ${index + 1}` }}
+                  </h4>
                 </div>
                 <Button
                   type="button"
@@ -276,11 +280,11 @@
                 </div>
 
                 <div
-                  v-if="block.previewUrl"
+                  v-if="block.previewUrl || block.url"
                   class="relative rounded-lg border overflow-hidden bg-muted"
                 >
                   <img
-                    :src="block.previewUrl"
+                    :src="block.previewUrl || block.url"
                     alt="Block image preview"
                     class="w-full h-32 object-cover"
                   />
@@ -301,7 +305,7 @@
         >
           <Spinner v-if="isLoading" />
           <Save v-else class="h-4 w-4" />
-          {{ isLoading ? "Creating..." : "Create Project" }}
+          {{ isLoading ? "Saving..." : "Save Changes" }}
         </Button>
         <Button
           type="button"
@@ -343,13 +347,23 @@ import DashboardPageHeader from "@/components/DashboardPageHeader.vue";
 import { useProjectsStore } from "~/stores/projects";
 import { useBlocksStore } from "~/stores/blocks";
 import { useCategoriesStore } from "~/stores/categories";
-import type { CreateProjectData, CreateBlockData, Category } from "~/types/projects";
+import type { CreateProjectData, Category, Block } from "~/types/projects";
 import Spinner from "~/components/ui/spinner/Spinner.vue";
 
 const router = useRouter();
+const route = useRoute();
 const projectsStore = useProjectsStore();
 const blocksStore = useBlocksStore();
 const categoriesStore = useCategoriesStore();
+
+const projectId = computed(() => parseInt(route.params.id as string));
+
+// Loading states
+const initialLoading = ref(true);
+const isLoading = computed(() => projectsStore.loading || blocksStore.loading);
+
+// Project data
+const project = ref<any>(null);
 
 // Project form data
 const formData = reactive<CreateProjectData>({
@@ -363,18 +377,6 @@ const previewUrl = ref<string | null>(null);
 // Category management
 const categorySearch = ref("");
 const selectedCategories = ref<Category[]>([]);
-
-// Fetch categories on mount
-onMounted(async () => {
-  projectsStore.clearError();
-  blocksStore.clearError();
-
-  try {
-    await categoriesStore.fetchCategories();
-  } catch (error) {
-    console.error("Failed to fetch categories:", error);
-  }
-});
 
 // Filter categories based on search
 const filteredCategories = computed(() => {
@@ -408,7 +410,6 @@ const handleAddCategory = async () => {
   const existing = categoriesStore.categoryByName(name);
 
   if (existing) {
-    // Select the existing category
     selectCategory(existing);
     return;
   }
@@ -437,15 +438,21 @@ const removeCategory = (categoryId: number) => {
 };
 
 // Blocks management
-interface BlockForm extends CreateBlockData {
-  tempId: string;
+interface BlockForm {
+  id?: number;
+  tempId?: string;
+  title: string;
+  description: string | null;
+  url?: string | null;
+  image?: File | null;
   previewUrl?: string;
+  isNew?: boolean;
+  isModified?: boolean;
+  isDeleted?: boolean;
 }
 
 const blocks = ref<BlockForm[]>([]);
-
-// Combined loading state
-const isLoading = computed(() => projectsStore.loading || blocksStore.loading);
+const blocksToDelete = ref<number[]>([]);
 
 // Add a new block
 const addBlock = () => {
@@ -455,11 +462,19 @@ const addBlock = () => {
     description: "",
     image: null,
     previewUrl: undefined,
+    isNew: true,
   });
 };
 
 // Remove a block
 const removeBlock = (index: number) => {
+  const block = blocks.value[index];
+
+  if (block.id) {
+    // Existing block - mark for deletion
+    blocksToDelete.value.push(block.id);
+  }
+
   blocks.value.splice(index, 1);
 };
 
@@ -473,6 +488,7 @@ const handleBlockImageChange = (index: number, event: Event) => {
 
   if (file) {
     block.image = file;
+    block.isModified = true;
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -484,7 +500,6 @@ const handleBlockImageChange = (index: number, event: Event) => {
     reader.readAsDataURL(file);
   } else {
     block.image = null;
-    block.previewUrl = undefined;
   }
 };
 
@@ -509,10 +524,6 @@ const handleFileChange = (event: Event) => {
 
 // Validate blocks
 const validateBlocks = (): boolean => {
-  if (blocks.value.length === 0) {
-    return true; // Blocks are optional
-  }
-
   for (let i = 0; i < blocks.value.length; i++) {
     const block = blocks.value[i];
     if (!block || !block.title || block.title.trim() === "") {
@@ -526,43 +537,52 @@ const validateBlocks = (): boolean => {
 
 // Handle form submission
 const handleSubmit = async () => {
-  // Clear previous errors
   projectsStore.clearError();
   blocksStore.clearError();
 
-  // Validate blocks
   if (!validateBlocks()) {
     return;
   }
 
   try {
-    // Step 1: Create the project
-    const response = await projectsStore.createProject({
+    // Step 1: Update the project
+    await projectsStore.updateProject(projectId.value, {
       title: formData.title,
       description: formData.description || null,
-      thumbnail: formData.thumbnail || null,
+      thumbnail: formData.thumbnail || undefined,
       categoryIds: selectedCategories.value.map((cat) => cat.id),
     });
 
-    const projectId = response.data.id;
+    // Step 2: Delete blocks marked for deletion
+    if (blocksToDelete.value.length > 0) {
+      await Promise.all(
+        blocksToDelete.value.map((blockId) => blocksStore.deleteBlock(blockId))
+      );
+    }
 
-    // Step 2: Create all blocks for the project
-    if (blocks.value.length > 0) {
-      const blockPromises = blocks.value.map((block) =>
-        blocksStore.createBlock(projectId, {
+    // Step 3: Create or update blocks
+    for (const block of blocks.value) {
+      if (block.isNew) {
+        // Create new block
+        await blocksStore.createBlock(projectId.value, {
           title: block.title,
           description: block.description || null,
           image: block.image || null,
-        })
-      );
-
-      await Promise.all(blockPromises);
+        });
+      } else if (block.isModified && block.id) {
+        // Update existing block
+        await blocksStore.updateBlock(block.id, {
+          title: block.title,
+          description: block.description || null,
+          image: block.image || undefined,
+        });
+      }
     }
 
-    // Step 3: Navigate to projects list
+    // Step 4: Navigate back to projects list
     router.push("/dashboard/projects");
   } catch (error: any) {
-    console.error("Failed to create project:", error);
+    console.error("Failed to update project:", error);
   }
 };
 
@@ -570,4 +590,62 @@ const handleSubmit = async () => {
 const handleCancel = () => {
   router.push("/dashboard/projects");
 };
+
+// Fetch project data on mount
+onMounted(async () => {
+  projectsStore.clearError();
+  blocksStore.clearError();
+
+  try {
+    // Fetch categories
+    await categoriesStore.fetchCategories();
+
+    // Fetch project details
+    const projectResponse = await projectsStore.fetchProjectById(projectId.value);
+    project.value = projectResponse.data;
+
+    // Pre-fill form data
+    formData.title = project.value.title;
+    formData.description = project.value.description || "";
+
+    // Pre-select categories
+    if (project.value.categories) {
+      selectedCategories.value = [...project.value.categories];
+    }
+
+    // Fetch project blocks
+    const blocksResponse = await blocksStore.fetchBlocks(projectId.value);
+    blocks.value = blocksResponse.data.map((block: Block) => ({
+      id: block.id,
+      title: block.title,
+      description: block.description,
+      url: block.url,
+      image: null,
+      previewUrl: undefined,
+      isNew: false,
+      isModified: false,
+    }));
+  } catch (error) {
+    console.error("Failed to fetch project data:", error);
+  } finally {
+    initialLoading.value = false;
+  }
+});
+
+// Watch for changes in block title/description to mark as modified
+watch(
+  blocks,
+  (newBlocks) => {
+    newBlocks.forEach((block, index) => {
+      if (!block.isNew && block.id) {
+        // Check if title or description changed (would need original values to compare)
+        // For simplicity, we'll mark as modified when they edit
+        if (block.title || block.description !== null) {
+          block.isModified = true;
+        }
+      }
+    });
+  },
+  { deep: true }
+);
 </script>

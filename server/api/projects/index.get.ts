@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
       title,
       thumbnail,
       description,
-      project_category (
+      projectCategory (
         category:categories (
           id,
           name
@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
     title: p.title,
     thumbnail: p.thumbnail,
     description: p.description,
-    categories: p.project_category?.map((pc) => pc.category) || [],
+    categories: p.projectCategory?.map((pc) => pc.category) || [],
   }));
 
   return { data: formatted };

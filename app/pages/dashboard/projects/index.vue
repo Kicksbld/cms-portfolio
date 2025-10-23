@@ -71,7 +71,7 @@
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                <DropdownMenuItem @click="router.push(`/dashboard/projects/${project.id}/edit`)">
                   <Pencil class="h-4 w-4" />
                   Edit Project
                 </DropdownMenuItem>
@@ -109,15 +109,29 @@
           </div>
         </div>
 
-        <div class="p-4 cursor-pointer">
+        <div class="p-4 cursor-pointer space-y-2">
           <h3
             class="font-semibold text-lg line-clamp-1 group-hover:text-primary transition-colors"
           >
             {{ project.title }}
           </h3>
-          <p class="text-sm text-muted-foreground mt-1 line-clamp-2">
+          <p class="text-sm text-muted-foreground line-clamp-2">
             {{ project.description }}
           </p>
+
+          <!-- Categories badges -->
+          <div
+            v-if="project.categories && project.categories.length > 0"
+            class="flex flex-wrap gap-1.5 pt-1"
+          >
+            <span
+              v-for="category in project.categories"
+              :key="category.id"
+              class="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium"
+            >
+              {{ category.name }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -162,6 +176,7 @@ import Loader from "@/components/ui/Loader.vue";
 import DashboardPageHeader from "@/components/DashboardPageHeader.vue";
 import { useProjectsStore } from "~/stores/projects";
 
+const router = useRouter();
 const projectsStore = useProjectsStore();
 
 onMounted(async () => {

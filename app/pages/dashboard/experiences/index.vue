@@ -89,7 +89,7 @@
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
+                    <DropdownMenuItem @click="navigateToEdit(experience.id)">
                       <Pencil class="h-4 w-4" />
                       Edit Experience
                     </DropdownMenuItem>
@@ -180,7 +180,7 @@
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
+                    <DropdownMenuItem @click="navigateToEdit(experience.id)">
                       <Pencil class="h-4 w-4" />
                       Edit Experience
                     </DropdownMenuItem>
@@ -265,6 +265,7 @@ import Loader from "@/components/ui/Loader.vue";
 import DashboardPageHeader from "@/components/DashboardPageHeader.vue";
 import { useExperiencesStore } from "~/stores/experiences";
 
+const router = useRouter();
 const experiencesStore = useExperiencesStore();
 
 onMounted(async () => {
@@ -277,6 +278,10 @@ onMounted(async () => {
 
 const professionalExperiences = computed(() => experiencesStore.professionnelExperiences);
 const scholaireExperiences = computed(() => experiencesStore.scholaireExperiences);
+
+const navigateToEdit = (experienceId: number) => {
+  router.push(`/dashboard/experiences/edit/${experienceId}`);
+};
 
 const handleDeleteExperience = async (experienceId: number) => {
   try {

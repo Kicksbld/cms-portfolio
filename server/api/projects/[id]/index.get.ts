@@ -29,20 +29,38 @@ export default defineEventHandler(async (event) => {
       `
       id,
       title,
-      thumbnail
+      thumbnail,
+      description,
+      user_id,
+      projectCategory (
+        category:categories (
+          id,
+          name
+        )
+      )
     `
     )
     .eq("id", id)
+    .eq("user_id", user.id)
     .single();
 
-  if (error) {
+  if (error || !project) {
     throw createError({
-      statusCode: 500,
-      message: "Erreur lors de la récupération du projet",
-      data: error.message,
+      statusCode: error ? 500 : 404,
+      message: error ? "Erreur lors de la récupération du projet" : "Projet non trouvé",
+      data: error?.message,
     });
   }
+
+  const formatted = {
+    id: project.id,
+    title: project.title,
+    thumbnail: project.thumbnail,
+    description: project.description,
+    categories: project.projectCategory?.map((pc) => pc.category) || [],
+  };
+
   return {
-    data: project,
+    data: formatted,
   };
 });

@@ -60,7 +60,7 @@ npm generate
 User (Supabase Auth)
 ├── Projects (1:N)
 │   ├── Blocks (1:N)
-│   └── Categories (M:N via project_category)
+│   └── Categories (M:N via projectCategory)
 └── Links (1:N)
 ```
 
@@ -74,7 +74,7 @@ User (Supabase Auth)
 - `link`: Social/external links
   - Fields: `id`, `user_id`, `title`, `url`, `icon`
 - `categories`: Project categories
-- `project_category`: Junction table for M:N relationship
+- `projectCategory`: Junction table for M:N relationship
 
 **Storage Buckets**:
 - `projects`: Project thumbnail images

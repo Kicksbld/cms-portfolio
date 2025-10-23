@@ -19,6 +19,7 @@ export interface CreateProjectData {
   title: string
   thumbnail?: File | null
   description?: string | null
+  categoryIds?: number[]
 }
 
 export interface DeleteProjectResponse {
