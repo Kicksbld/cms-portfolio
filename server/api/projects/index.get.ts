@@ -1,19 +1,19 @@
 import { createSupabaseServerClient } from "../../utils/supabase.server";
 import { createError } from "h3";
+import authGuard from "../_authGard";
 
 export default defineEventHandler(async (event) => {
-  const supabase = createSupabaseServerClient(event);
+  const user = await authGuard(event);
 
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-
-  if (authError || !userData?.user) {
+  if (!user) {
     throw createError({
       statusCode: 401,
       message: "Utilisateur non connecté",
     });
   }
 
-  const userId = userData.user.id;
+  const supabase = createSupabaseServerClient(event);
+  const userId = user.id;
 
   const { data: projects, error } = await supabase
     .from("project")
@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
       title,
       thumbnail,
       description,
-      project_category (
+      projectCategory (
         category:categories (
           id,
           name
@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
     title: p.title,
     thumbnail: p.thumbnail,
     description: p.description,
-    categories: p.project_category?.map((pc) => pc.category) || [],
+    categories: p.projectCategory?.map((pc) => pc.category) || [],
   }));
 
   return { data: formatted };

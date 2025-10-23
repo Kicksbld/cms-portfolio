@@ -7,110 +7,327 @@
       />
     </template>
 
-    <Card>
-      <CardHeader>
-        <CardTitle>Project Details</CardTitle>
-        <CardDescription>
-          Fill in the details below to create your new project
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form @submit.prevent="handleSubmit" class="space-y-6">
-          <div class="space-y-2">
-            <label
-              for="title"
-              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Title <span class="text-red-500">*</span>
-            </label>
-            <Input
-              id="title"
-              v-model="formData.title"
-              placeholder="Enter project title"
-              required
-              :disabled="projectsStore.loading"
-            />
-            <p class="text-sm text-muted-foreground">
-              Give your project a clear and descriptive title
-            </p>
-          </div>
+    <div class="space-y-6">
+      <!-- Project Details Card -->
+      <Card>
+        <CardHeader>
+          <CardTitle>Project Details</CardTitle>
+          <CardDescription>
+            Fill in the details below to create your new project
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form @submit.prevent="handleSubmit" class="space-y-6">
+            <div class="space-y-2">
+              <label
+                for="title"
+                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Title <span class="text-red-500">*</span>
+              </label>
+              <Input
+                id="title"
+                v-model="formData.title"
+                placeholder="Enter project title"
+                required
+                :disabled="isLoading"
+              />
+              <p class="text-sm text-muted-foreground">
+                Give your project a clear and descriptive title
+              </p>
+            </div>
 
-          <div class="space-y-2">
-            <label
-              for="description"
-              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Description
-            </label>
-            <Textarea
-              id="description"
-              v-model="formData.description!"
-              placeholder="Describe your project..."
-              rows="5"
-              :disabled="projectsStore.loading"
-            />
-            <p class="text-sm text-muted-foreground">
-              Provide a brief overview of your project and its key features
-            </p>
-          </div>
+            <div class="space-y-2">
+              <label
+                for="description"
+                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Description
+              </label>
+              <Textarea
+                id="description"
+                v-model="formData.description!"
+                placeholder="Describe your project..."
+                rows="5"
+                :disabled="isLoading"
+              />
+              <p class="text-sm text-muted-foreground">
+                Provide a brief overview of your project and its key features
+              </p>
+            </div>
 
-          <div class="space-y-2">
-            <label
-              for="thumbnail"
-              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Thumbnail URL
-            </label>
-            <Input
-              id="thumbnail"
-              v-model="formData.thumbnail!"
-              type="url"
-              placeholder="https://example.com/image.jpg"
-              :disabled="projectsStore.loading"
-            />
-            <p class="text-sm text-muted-foreground">
-              Add a URL to an image that represents your project
-            </p>
-          </div>
+            <div class="space-y-2">
+              <label
+                for="thumbnail"
+                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Thumbnail Image
+              </label>
+              <Input
+                id="thumbnail"
+                type="file"
+                accept="image/*"
+                :disabled="isLoading"
+                @change="handleFileChange"
+              />
+              <p class="text-sm text-muted-foreground">
+                Upload an image that represents your project
+              </p>
+            </div>
 
-          <div
-            v-if="formData.thumbnail"
-            class="relative rounded-lg border overflow-hidden bg-muted"
-          >
-            <img
-              :src="formData.thumbnail"
-              alt="Thumbnail preview"
-              class="w-full h-48 object-cover"
-            />
-          </div>
-
-          <div class="flex items-center gap-3 pt-4">
-            <Button
-              type="submit"
-              :disabled="projectsStore.loading || !formData.title"
-              class="gap-2"
+            <div
+              v-if="previewUrl"
+              class="relative rounded-lg border overflow-hidden bg-muted"
             >
-              <Spinner v-if="projectsStore.loading" />
-              <Save v-else class="h-4 w-4" />
-              {{ projectsStore.loading ? "Creating..." : "Create Project" }}
-            </Button>
+              <img
+                :src="previewUrl"
+                alt="Thumbnail preview"
+                class="w-full h-48 object-cover"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <label
+                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Categories
+              </label>
+              <div class="flex gap-2">
+                <div class="flex-1">
+                  <Input
+                    v-model="categorySearch"
+                    placeholder="Search or create category..."
+                    :disabled="isLoading"
+                    @keydown.enter.prevent="handleAddCategory"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  :disabled="isLoading || !categorySearch.trim()"
+                  @click="handleAddCategory"
+                  class="gap-2"
+                >
+                  <Plus class="h-4 w-4" />
+                  Add
+                </Button>
+              </div>
+
+              <!-- Category suggestions dropdown -->
+              <div
+                v-if="categorySearch && filteredCategories.length > 0"
+                class="border rounded-md bg-popover text-popover-foreground shadow-md max-h-48 overflow-y-auto"
+              >
+                <div
+                  v-for="category in filteredCategories"
+                  :key="category.id"
+                  class="px-3 py-2 text-sm hover:bg-accent cursor-pointer"
+                  @click="selectCategory(category)"
+                >
+                  {{ category.name }}
+                </div>
+              </div>
+
+              <!-- Selected categories -->
+              <div v-if="selectedCategories.length > 0" class="flex flex-wrap gap-2 mt-2">
+                <div
+                  v-for="category in selectedCategories"
+                  :key="category.id"
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
+                >
+                  <span>{{ category.name }}</span>
+                  <button
+                    type="button"
+                    :disabled="isLoading"
+                    @click="removeCategory(category.id)"
+                    class="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <X class="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+
+              <p class="text-sm text-muted-foreground">
+                Select existing categories or type to create new ones
+              </p>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <!-- Project Blocks Card -->
+      <Card>
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle>Project Blocks</CardTitle>
+              <CardDescription>
+                Add sections or components that make up your project
+              </CardDescription>
+            </div>
             <Button
               type="button"
+              size="sm"
               variant="outline"
-              :disabled="projectsStore.loading"
-              @click="handleCancel"
+              :disabled="isLoading"
+              @click="addBlock"
+              class="gap-2"
             >
-              Cancel
+              <Plus class="h-4 w-4" />
+              Add Block
             </Button>
           </div>
-        </form>
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          <div v-if="blocks.length === 0" class="text-center py-8">
+            <div class="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+              <Layers class="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p class="text-sm text-muted-foreground mb-4">
+              No blocks added yet. Add blocks to showcase different aspects of your project.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              :disabled="isLoading"
+              @click="addBlock"
+              class="gap-2"
+            >
+              <Plus class="h-4 w-4" />
+              Add Your First Block
+            </Button>
+          </div>
+
+          <div v-else class="space-y-4">
+            <div
+              v-for="(block, index) in blocks"
+              :key="block.tempId"
+              class="border rounded-lg p-4 space-y-4 bg-card relative"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="text-sm font-medium text-primary">{{ index + 1 }}</span>
+                  </div>
+                  <h4 class="text-sm font-medium">Block {{ index + 1 }}</h4>
+                </div>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  :disabled="isLoading"
+                  @click="removeBlock(index)"
+                  class="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 class="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div class="space-y-4">
+                <div class="space-y-2">
+                  <label
+                    :for="`block-title-${index}`"
+                    class="text-sm font-medium leading-none"
+                  >
+                    Title <span class="text-red-500">*</span>
+                  </label>
+                  <Input
+                    :id="`block-title-${index}`"
+                    v-model="block.title"
+                    placeholder="Enter block title"
+                    :disabled="isLoading"
+                  />
+                </div>
+
+                <div class="space-y-2">
+                  <label
+                    :for="`block-description-${index}`"
+                    class="text-sm font-medium leading-none"
+                  >
+                    Description
+                  </label>
+                  <Textarea
+                    :id="`block-description-${index}`"
+                    v-model="block.description!"
+                    placeholder="Describe this block..."
+                    rows="3"
+                    :disabled="isLoading"
+                  />
+                </div>
+
+                <div class="space-y-2">
+                  <label
+                    :for="`block-image-${index}`"
+                    class="text-sm font-medium leading-none"
+                  >
+                    Block Image
+                  </label>
+                  <Input
+                    :id="`block-image-${index}`"
+                    type="file"
+                    accept="image/*"
+                    :disabled="isLoading"
+                    @change="handleBlockImageChange(index, $event)"
+                  />
+                  <p class="text-xs text-muted-foreground">
+                    Upload an image that represents this block
+                  </p>
+                </div>
+
+                <div
+                  v-if="block.previewUrl"
+                  class="relative rounded-lg border overflow-hidden bg-muted"
+                >
+                  <img
+                    :src="block.previewUrl"
+                    alt="Block image preview"
+                    class="w-full h-32 object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3">
+        <Button
+          type="button"
+          :disabled="isLoading || !formData.title"
+          @click="handleSubmit"
+          class="gap-2"
+        >
+          <Spinner v-if="isLoading" />
+          <Save v-else class="h-4 w-4" />
+          {{ isLoading ? "Creating..." : "Create Project" }}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          :disabled="isLoading"
+          @click="handleCancel"
+        >
+          Cancel
+        </Button>
+      </div>
+
+      <!-- Error Display -->
+      <div v-if="projectsStore.error || blocksStore.error" class="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+        <div class="flex items-center gap-2 text-destructive">
+          <AlertCircle class="h-4 w-4" />
+          <p class="text-sm font-medium">
+            {{ projectsStore.error || blocksStore.error }}
+          </p>
+        </div>
+      </div>
+    </div>
   </NuxtLayout>
 </template>
 
 <script setup lang="ts">
-import { Save } from "lucide-vue-next";
+import { Save, Plus, Trash2, Layers, AlertCircle, X } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Textarea from "@/components/ui/textarea/Textarea.vue";
@@ -124,32 +341,232 @@ import {
 } from "@/components/ui/card";
 import DashboardPageHeader from "@/components/DashboardPageHeader.vue";
 import { useProjectsStore } from "~/stores/projects";
-import type { CreateProjectData } from "~/types/projects";
+import { useBlocksStore } from "~/stores/blocks";
+import { useCategoriesStore } from "~/stores/categories";
+import type { CreateProjectData, CreateBlockData, Category } from "~/types/projects";
 import Spinner from "~/components/ui/spinner/Spinner.vue";
 
 const router = useRouter();
 const projectsStore = useProjectsStore();
+const blocksStore = useBlocksStore();
+const categoriesStore = useCategoriesStore();
 
+// Project form data
 const formData = reactive<CreateProjectData>({
   title: "",
   description: "",
-  thumbnail: "",
+  thumbnail: null,
 });
 
-const handleSubmit = async () => {
+const previewUrl = ref<string | null>(null);
+
+// Category management
+const categorySearch = ref("");
+const selectedCategories = ref<Category[]>([]);
+
+// Fetch categories on mount
+onMounted(async () => {
+  projectsStore.clearError();
+  blocksStore.clearError();
+
   try {
-    await projectsStore.createProject({
+    await categoriesStore.fetchCategories();
+  } catch (error) {
+    console.error("Failed to fetch categories:", error);
+  }
+});
+
+// Filter categories based on search
+const filteredCategories = computed(() => {
+  if (!categorySearch.value.trim()) {
+    return [];
+  }
+
+  const search = categorySearch.value.toLowerCase();
+  return categoriesStore.allCategories.filter(
+    (cat) =>
+      cat.name.toLowerCase().includes(search) &&
+      !selectedCategories.value.some((selected) => selected.id === cat.id)
+  );
+});
+
+// Select an existing category
+const selectCategory = (category: Category) => {
+  if (!selectedCategories.value.some((cat) => cat.id === category.id)) {
+    selectedCategories.value.push(category);
+  }
+  categorySearch.value = "";
+};
+
+// Add a new category or select existing one
+const handleAddCategory = async () => {
+  const name = categorySearch.value.trim();
+
+  if (!name) return;
+
+  // Check if category already exists
+  const existing = categoriesStore.categoryByName(name);
+
+  if (existing) {
+    // Select the existing category
+    selectCategory(existing);
+    return;
+  }
+
+  // Check if already selected
+  if (selectedCategories.value.some((cat) => cat.name.toLowerCase() === name.toLowerCase())) {
+    categorySearch.value = "";
+    return;
+  }
+
+  // Create new category
+  try {
+    const response = await categoriesStore.createCategory(name);
+    selectedCategories.value.push(response.data);
+    categorySearch.value = "";
+  } catch (error) {
+    console.error("Failed to create category:", error);
+  }
+};
+
+// Remove a selected category
+const removeCategory = (categoryId: number) => {
+  selectedCategories.value = selectedCategories.value.filter(
+    (cat) => cat.id !== categoryId
+  );
+};
+
+// Blocks management
+interface BlockForm extends CreateBlockData {
+  tempId: string;
+  previewUrl?: string;
+}
+
+const blocks = ref<BlockForm[]>([]);
+
+// Combined loading state
+const isLoading = computed(() => projectsStore.loading || blocksStore.loading);
+
+// Add a new block
+const addBlock = () => {
+  blocks.value.push({
+    tempId: `temp-${Date.now()}-${Math.random()}`,
+    title: "",
+    description: "",
+    image: null,
+    previewUrl: undefined,
+  });
+};
+
+// Remove a block
+const removeBlock = (index: number) => {
+  blocks.value.splice(index, 1);
+};
+
+// Handle block image change
+const handleBlockImageChange = (index: number, event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  const block = blocks.value[index];
+
+  if (!block) return;
+
+  if (file) {
+    block.image = file;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const currentBlock = blocks.value[index];
+      if (currentBlock) {
+        currentBlock.previewUrl = e.target?.result as string;
+      }
+    };
+    reader.readAsDataURL(file);
+  } else {
+    block.image = null;
+    block.previewUrl = undefined;
+  }
+};
+
+// Handle thumbnail file change
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (file) {
+    formData.thumbnail = file;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewUrl.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    formData.thumbnail = null;
+    previewUrl.value = null;
+  }
+};
+
+// Validate blocks
+const validateBlocks = (): boolean => {
+  if (blocks.value.length === 0) {
+    return true; // Blocks are optional
+  }
+
+  for (let i = 0; i < blocks.value.length; i++) {
+    const block = blocks.value[i];
+    if (!block || !block.title || block.title.trim() === "") {
+      projectsStore.error = `Block ${i + 1} requires a title`;
+      return false;
+    }
+  }
+
+  return true;
+};
+
+// Handle form submission
+const handleSubmit = async () => {
+  // Clear previous errors
+  projectsStore.clearError();
+  blocksStore.clearError();
+
+  // Validate blocks
+  if (!validateBlocks()) {
+    return;
+  }
+
+  try {
+    // Step 1: Create the project
+    const response = await projectsStore.createProject({
       title: formData.title,
       description: formData.description || null,
       thumbnail: formData.thumbnail || null,
+      categoryIds: selectedCategories.value.map((cat) => cat.id),
     });
 
+    const projectId = response.data.id;
+
+    // Step 2: Create all blocks for the project
+    if (blocks.value.length > 0) {
+      const blockPromises = blocks.value.map((block) =>
+        blocksStore.createBlock(projectId, {
+          title: block.title,
+          description: block.description || null,
+          image: block.image || null,
+        })
+      );
+
+      await Promise.all(blockPromises);
+    }
+
+    // Step 3: Navigate to projects list
     router.push("/dashboard/projects");
   } catch (error: any) {
     console.error("Failed to create project:", error);
   }
 };
 
+// Handle cancel
 const handleCancel = () => {
   router.push("/dashboard/projects");
 };
