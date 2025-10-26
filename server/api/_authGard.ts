@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   const publicRoutes = [
     '/api/auth/login',
     '/api/auth/register',
+    '/api/public/',
   ];
 
   if (publicRoutes.some((r) => path?.startsWith(r))) {

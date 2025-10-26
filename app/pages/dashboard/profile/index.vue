@@ -1,10 +1,22 @@
 <template>
   <NuxtLayout name="dashboard">
     <template #header>
-      <DashboardPageHeader
-        title="Profile"
-        description="Manage your personal information and social links"
-      />
+      <div class="flex items-center justify-between">
+        <DashboardPageHeader
+          title="Profile"
+          description="Manage your personal information and social links"
+        />
+        <Button
+          v-if="authStore.userProfile"
+          as-child
+          variant="outline"
+        >
+          <NuxtLink :to="`/portfolio/${authStore.userProfile.id}`" target="_blank">
+            <ExternalLink class="h-4 w-4 mr-2" />
+            View Public Portfolio
+          </NuxtLink>
+        </Button>
+      </div>
     </template>
 
     <div v-if="loading" class="flex items-center justify-center py-12">

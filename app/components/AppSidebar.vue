@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { 
-  Home, 
-  FolderKanban, 
-  User, 
-  Briefcase, 
+import {
+  Home,
+  FolderKanban,
+  User,
+  Briefcase,
   Code2,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  ExternalLink
 } from "lucide-vue-next";
 import {
   Sidebar,
@@ -185,6 +186,19 @@ onMounted(() => {
         </SidebarMenuItem>
 
         <SidebarSeparator class="my-3" />
+
+        <SidebarMenuItem v-if="authStore.userProfile">
+          <Button
+            as-child
+            variant="ghost"
+            class="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent"
+          >
+            <NuxtLink :to="`/portfolio/${authStore.userProfile.id}`" target="_blank">
+              <ExternalLink class="w-4 h-4" />
+              <span class="text-sm">View Portfolio</span>
+            </NuxtLink>
+          </Button>
+        </SidebarMenuItem>
 
         <SidebarMenuItem>
           <Button
