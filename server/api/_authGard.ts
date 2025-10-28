@@ -7,6 +7,7 @@ export default defineEventHandler(async (event) => {
     '/api/auth/login',
     '/api/auth/register',
     '/api/public/',
+    '/api/tracking/',
   ];
 
   if (publicRoutes.some((r) => path?.startsWith(r))) {

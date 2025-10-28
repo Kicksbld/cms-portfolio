@@ -10,19 +10,6 @@
             <h3 class="text-3xl font-bold tracking-tight">
               {{ value }}
             </h3>
-            <span
-              v-if="change"
-              :class="[
-                'text-xs font-medium',
-                changeType === 'positive'
-                  ? 'text-green-600'
-                  : changeType === 'negative'
-                  ? 'text-red-600'
-                  : 'text-muted-foreground',
-              ]"
-            >
-              {{ change }}
-            </span>
           </div>
           <p v-if="description" class="text-xs text-muted-foreground mt-1">
             {{ description }}
@@ -52,8 +39,6 @@ defineProps<{
   title: string;
   value: string | number;
   description?: string;
-  change?: string;
-  changeType?: "positive" | "negative" | "neutral";
   icon: Component;
   iconClass?: string;
   iconBgClass?: string;

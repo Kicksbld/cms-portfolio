@@ -407,9 +407,11 @@ import {
 import Loader from "@/components/ui/Loader.vue";
 import ThemeSwitcher from "@/components/ThemeSwitcher.vue";
 import { useAuthStore } from "~/stores/auth";
+import { useAnalyticsStore } from "~/stores/analytics";
 
 const route = useRoute();
 const authStore = useAuthStore();
+const analyticsStore = useAnalyticsStore();
 const userId = route.params.userId as string;
 
 // State
@@ -525,6 +527,19 @@ const handlePageChange = (page: number) => {
   document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
 };
 
+// Track portfolio view
+const hasTrackedView = ref(false);
+
+const trackPortfolioView = async () => {
+  // Only track once per page load
+  if (hasTrackedView.value) return;
+
+  hasTrackedView.value = true;
+
+  // Track the view (fails silently if there's an error)
+  await analyticsStore.trackView(userId, isOwnPortfolio.value);
+};
+
 // Fetch all data on mount
 onMounted(async () => {
   await Promise.all([
@@ -534,5 +549,11 @@ onMounted(async () => {
     fetchExperiences(),
     fetchLinks(),
   ]);
+
+  // Track view after a short delay to ensure page has loaded
+  // This also helps prevent tracking bots that don't execute JS fully
+  setTimeout(() => {
+    trackPortfolioView();
+  }, 1000);
 });
 </script>

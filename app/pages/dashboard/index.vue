@@ -24,8 +24,6 @@
             title="Total Views"
             :value="analytics.totalViews"
             description="Portfolio page views"
-            change="+12.5%"
-            changeType="positive"
             :icon="Eye"
             iconClass="text-blue-600"
             iconBgClass="bg-blue-100"
@@ -204,15 +202,17 @@ import { Button } from "@/components/ui/button";
 import Loader from "@/components/ui/Loader.vue";
 import { useProjectsStore } from "~/stores/projects";
 import { useExperiencesStore } from "~/stores/experiences";
+import { useAnalyticsStore } from "~/stores/analytics";
 
 const projectsStore = useProjectsStore();
 const experiencesStore = useExperiencesStore();
+const analyticsStore = useAnalyticsStore();
 
 const isLoading = ref(true);
 
-// Analytics data (static for now as requested)
+// Analytics data (now dynamic from the analytics store)
 const analytics = computed(() => ({
-  totalViews: "2,547",
+  totalViews: analyticsStore.formattedTotalViews || "0",
   projectsCount: projectsStore.projects.length,
   experiencesCount: experiencesStore.experiences.length,
   skillsCount: 0, // Will be updated when skills store is loaded
@@ -229,6 +229,7 @@ onMounted(async () => {
     await Promise.all([
       projectsStore.fetchProjects(),
       experiencesStore.fetchExperiences(),
+      analyticsStore.fetchAnalytics(),
     ]);
   } catch (error) {
     console.error("Failed to fetch dashboard data:", error);
