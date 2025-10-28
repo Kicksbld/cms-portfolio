@@ -8,7 +8,7 @@
             <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-sm">
               <span class="text-primary-foreground font-bold text-lg">C</span>
             </div>
-            <div>
+            <div class="hidden sm:block">
               <h1 class="text-xl font-bold">Canvasly</h1>
               <p class="text-xs text-muted-foreground">Portfolio CMS</p>
             </div>
