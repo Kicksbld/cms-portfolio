@@ -4,19 +4,34 @@
       <Sun
         :class="[
           'h-4 w-4 transition-colors cursor-pointer',
-          currentTheme === 'light' ? 'text-primary' : 'text-muted-foreground',
+          theme === 'light' ? 'text-primary' : 'text-muted-foreground',
         ]"
         @click="handleSetLight"
       />
-      <Switch
-        :checked="currentTheme === 'dark'"
-        @click="handleClick"
-        aria-label="Toggle theme"
-      />
+
+      <!-- Custom Switch -->
+      <button
+        type="button"
+        role="switch"
+        :aria-checked="theme === 'dark'"
+        :class="[
+          'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          theme === 'dark' ? 'bg-primary' : 'bg-input'
+        ]"
+        @click="toggleTheme"
+      >
+        <span
+          :class="[
+            'inline-block h-5 w-5 transform rounded-full bg-background shadow-lg transition-transform',
+            theme === 'dark' ? 'translate-x-5' : 'translate-x-1'
+          ]"
+        />
+      </button>
+
       <Moon
         :class="[
           'h-4 w-4 transition-colors cursor-pointer',
-          currentTheme === 'dark' ? 'text-primary' : 'text-muted-foreground',
+          theme === 'dark' ? 'text-primary' : 'text-muted-foreground',
         ]"
         @click="handleSetDark"
       />
@@ -26,35 +41,18 @@
 
 <script setup lang="ts">
 import { Sun, Moon } from "lucide-vue-next";
-import { Switch } from "@/components/ui/switch";
 
 const { theme, setTheme } = useTheme();
 
-const currentTheme = ref(theme.value);
-
-// Watch for theme changes
-watch(theme, (newTheme) => {
-  currentTheme.value = newTheme;
-});
-
-const handleClick = () => {
-  const newTheme = currentTheme.value === 'light' ? 'dark' : 'light';
-  setTheme(newTheme);
-  currentTheme.value = newTheme;
+const toggleTheme = () => {
+  setTheme(theme.value === 'light' ? 'dark' : 'light');
 };
 
 const handleSetLight = () => {
   setTheme('light');
-  currentTheme.value = 'light';
 };
 
 const handleSetDark = () => {
   setTheme('dark');
-  currentTheme.value = 'dark';
 };
-
-// Initialize on mount
-onMounted(() => {
-  currentTheme.value = theme.value;
-});
 </script>
